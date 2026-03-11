@@ -733,6 +733,10 @@ program
     false
   )
   .option(
+    '--agent-timeout <minutes>',
+    'Maximum time in minutes for the agent command to run (default: no limit)',
+  )
+  .option(
     '--tty',
     'Allocate a pseudo-TTY for the container (required for interactive tools like Claude Code)',
     false
@@ -1137,6 +1141,17 @@ program
       copilotGithubToken: process.env.COPILOT_GITHUB_TOKEN,
       copilotApiTarget: options.copilotApiTarget || process.env.COPILOT_API_TARGET,
     };
+
+    // Parse and validate --agent-timeout
+    if (options.agentTimeout !== undefined) {
+      const timeoutMinutes = parseInt(options.agentTimeout, 10);
+      if (isNaN(timeoutMinutes) || timeoutMinutes <= 0) {
+        logger.error('--agent-timeout must be a positive integer (minutes)');
+        process.exit(1);
+      }
+      config.agentTimeout = timeoutMinutes;
+      logger.info(`Agent timeout set to ${timeoutMinutes} minutes`);
+    }
 
     // Build rate limit config when API proxy is enabled
     if (config.enableApiProxy) {
