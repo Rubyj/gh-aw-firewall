@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { parseEnvironmentVariables, parseDomains, parseDomainsFile, escapeShellArg, joinShellArgs, parseVolumeMounts, isValidIPv4, isValidIPv6, parseDnsServers, validateAgentImage, isAgentImagePreset, AGENT_IMAGE_PRESETS, processAgentImageOption, processLocalhostKeyword, validateSkipPullWithBuildLocal, validateAllowHostPorts, validateFormat, validateApiProxyConfig, buildRateLimitConfig, validateRateLimitFlags } from './cli';
+import { parseEnvironmentVariables, parseDomains, parseDomainsFile, escapeShellArg, joinShellArgs, parseVolumeMounts, isValidIPv4, isValidIPv6, parseDnsServers, validateAgentImage, isAgentImagePreset, AGENT_IMAGE_PRESETS, processAgentImageOption, processLocalhostKeyword, validateSkipPullWithBuildLocal, validateAllowHostPorts, validateFormat, validateApiProxyConfig, buildRateLimitConfig, validateRateLimitFlags, handlePredownloadAction } from './cli';
 import { redactSecrets } from './redact-secrets';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -1537,6 +1537,30 @@ describe('cli', () => {
       const result = validateAllowHostPorts('3000-3010,8000-8090', true);
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
+    });
+  });
+
+  describe('handlePredownloadAction', () => {
+    it('should delegate to predownloadCommand with correct options', async () => {
+      // Mock the predownload module that handlePredownloadAction dynamically imports
+      const mockPredownloadCommand = jest.fn().mockResolvedValue(undefined);
+      jest.mock('./commands/predownload', () => ({
+        predownloadCommand: mockPredownloadCommand,
+      }));
+
+      await handlePredownloadAction({
+        imageRegistry: 'ghcr.io/test',
+        imageTag: 'v1.0',
+        agentImage: 'default',
+        enableApiProxy: false,
+      });
+
+      expect(mockPredownloadCommand).toHaveBeenCalledWith({
+        imageRegistry: 'ghcr.io/test',
+        imageTag: 'v1.0',
+        agentImage: 'default',
+        enableApiProxy: false,
+      });
     });
   });
 });
