@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { parseEnvironmentVariables, parseDomains, parseDomainsFile, escapeShellArg, joinShellArgs, parseVolumeMounts, isValidIPv4, isValidIPv6, parseDnsServers, validateAgentImage, isAgentImagePreset, AGENT_IMAGE_PRESETS, processAgentImageOption, processLocalhostKeyword, validateSkipPullWithBuildLocal, validateAllowHostPorts, parseMemoryLimit, validateFormat, validateApiProxyConfig, buildRateLimitConfig, validateRateLimitFlags } from './cli';
+import { parseEnvironmentVariables, parseDomains, parseDomainsFile, escapeShellArg, joinShellArgs, parseVolumeMounts, isValidIPv4, isValidIPv6, parseDnsServers, validateAgentImage, isAgentImagePreset, AGENT_IMAGE_PRESETS, processAgentImageOption, processLocalhostKeyword, validateSkipPullWithBuildLocal, validateAllowHostPorts, parseMemoryLimit, validateFormat, validateApiProxyConfig, buildRateLimitConfig, validateRateLimitFlags, formatItem, program } from './cli';
 import { redactSecrets } from './redact-secrets';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -1559,6 +1559,57 @@ describe('cli', () => {
 
     it('rejects zero', () => {
       expect(parseMemoryLimit('0g')).toHaveProperty('error');
+    });
+  });
+
+  describe('formatItem', () => {
+    it('should format item with description on same line when term fits', () => {
+      const result = formatItem('-v', 'verbose output', 20, 2, 2, 80);
+      expect(result).toBe('  -v                    verbose output');
+    });
+
+    it('should format item with description on next line when term is long', () => {
+      const result = formatItem('--very-long-option-name-here', 'desc', 10, 2, 2, 80);
+      expect(result).toContain('--very-long-option-name-here');
+      expect(result).toContain('\n');
+      expect(result).toContain('desc');
+    });
+
+    it('should format item without description', () => {
+      const result = formatItem('--flag', '', 20, 2, 2, 80);
+      expect(result).toBe('  --flag');
+    });
+  });
+
+  describe('help text formatting', () => {
+    it('should include section headers in help output', () => {
+      const help = program.helpInformation();
+      expect(help).toContain('Domain Filtering:');
+      expect(help).toContain('Image Management:');
+      expect(help).toContain('Container Configuration:');
+      expect(help).toContain('Network & Security:');
+      expect(help).toContain('API Proxy:');
+      expect(help).toContain('Logging & Debug:');
+    });
+
+    it('should include usage line', () => {
+      const help = program.helpInformation();
+      expect(help).toContain('Usage: awf');
+    });
+
+    it('should include program description', () => {
+      const help = program.helpInformation();
+      expect(help).toContain('Network firewall for agentic workflows');
+    });
+
+    it('should include arguments section', () => {
+      const help = program.helpInformation();
+      expect(help).toContain('Arguments:');
+    });
+
+    it('should include options section', () => {
+      const help = program.helpInformation();
+      expect(help).toContain('Options:');
     });
   });
 });
